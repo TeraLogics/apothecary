@@ -1,0 +1,85 @@
+<div>
+    <header style="padding:8px;padding-bottom:0;">
+      <section class="container">
+        <a style="color:rgba(79, 40, 167, 1);cursor:pointer;" phx-click="toggle-modal">Uploads</a>
+        <a href="/" style="display:flex;align-items:center;">
+          <div>
+            <h1 style="color:rgba(79, 40, 167, 0.75);font-size:3rem;margin:0;font-family:fantasy;">Apothecary</h1>
+            <span style="color:#5c676d;font-size:1.5rem;">A simple repository for Elixir packages.</span>
+          </div>
+          <div style="margin-right:5px;">
+            <img src="<%= Routes.static_path(@socket, "/images/apothecary.png") %>" alt="Apothecary Logo" height="64"/>
+          </div>
+        </a>
+      </section>
+    </header>
+
+    <main role="main" class="container">
+
+    <%= if @show_modal do %>
+      <%= live_component @socket,
+            ApothecaryWeb.ModalComponent,
+            id: :modal,
+            client_origin: @client_origin,
+            component: ApothecaryWeb.AboutComponent %>
+    <% end %>
+
+    <div>
+        <input type="text" placeholder="Filter on package name" value="<%= @filter_text %>" phx-keyup="filter" phx-debounce="100" />
+    </div>
+    <div id="package-list">
+    <%= for package <- @packages do %>
+        <div class="package-container" style="padding: 1em;">
+            <div id="<%= package.name %>" class="package-header" style="display:flex;align-items:center;" phx-value-package="<%= package.name %>" phx-value-version="<%= package.latest_version %>">
+                <span class="package-name" phx-click="click-package" phx-value-package="<%= package.name %>" phx-value-version="<%= package.latest_version %>"><%= package.name %></span>
+                <span style="font-size: 1.75rem;line-height: 1rem;font-weight: 300;color: #5c676d;margin-right:10px;"><%= package.latest_version %></span>
+
+                <div style="margin-left:auto;display:flex;align-items:center;color:#5c676d;">
+                    <div title="<%= package.version_count %> versions" style="display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="#5c676d" viewBox="0 0 24 24" width="24" height="24"><path fill-rule="evenodd" d="M10 22a2 2 0 01-2-2V4a2 2 0 012-2h11a2 2 0 012 2v16a2 2 0 01-2 2H10zm-.5-2a.5.5 0 00.5.5h11a.5.5 0 00.5-.5V4a.5.5 0 00-.5-.5H10a.5.5 0 00-.5.5v16zM6.17 4.165a.75.75 0 01-.335 1.006c-.228.114-.295.177-.315.201a.037.037 0 00-.008.016.387.387 0 00-.012.112v13c0 .07.008.102.012.112a.03.03 0 00.008.016c.02.024.087.087.315.201a.75.75 0 11-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 011.006.336zM2.15 5.624a.75.75 0 01-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 11-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 011.025.274z"></path></svg>
+                        <span style="margin-left:5px;"><%= package.version_count %></span>
+                    </div>
+                </div>
+            </div>
+            <span style="font-size:1.5rem;color:#5c676d;"><%= package.metadata["description"] %></span>
+
+            <%= if package.name in @expanded_packages do %>
+                <div style="margin:10px;">
+                <div style="font-size:1.6rem;font-weight:400;">Links</div>
+                <%= for {link_name, link} <- package.metadata["links"] do %>
+                    <a href="<%= link %>" style="color:rgba(79, 40, 167, 1);"><%= link_name %></a>
+                <% end %>
+                </div>
+                <div class="expanded-package" style="border-left:1px rgb(92, 103, 109) solid;margin:10px;padding:5px 15px 0;min-height:20px;">
+                    <div style="display:inline-block;width:50%;">
+                        <div style="font-size:1.6rem;">
+                            <span style="font-weight:400;">Versions</span>
+                            <span style="font-weight:300;">(<%= package.version_count %>)</span>
+                        </div>
+                        <%= for %{version: version, dependencies: deps} <- package.versions do %>
+                            <div style="margin:5px 0;display:flex;align-items:center;">
+                                <span class="version-tag <%= if @selected_versions[package.name].version == version, do: "selected" %>" phx-click="click-version" phx-value-package="<%= package.name %>" phx-value-version="<%= version %>"><%= version %></span>
+                                <a href="/repo/docs/<%= package.name %>-<%= version %>/index.html" style="color:rgba(79, 40, 167, 1);">Docs</a>
+                            </div>
+                        <% end %>
+                    </div>
+                    <div style="display:inline-block;vertical-align:top;">
+                        <div style="font-size:1.6rem;">
+                            <span style="font-weight:400;">Dependencies</span>
+                            <span style="font-weight:300;">(<%= length(@selected_versions[package.name].dependencies) %>)</span>
+                        </div>
+                        <div style="margin-top:5px;">
+                        <%= for %{package: dep_name, requirement: req} <- @selected_versions[package.name].dependencies do %>
+                                <div>
+                                    <span><%= dep_name %> <%= req %></span>
+                                </div>
+                        <% end %>
+                        </div>
+                    </div>
+                </div>
+            <% end %>
+        </div>
+    <% end %>
+    </div>
+    </main>
+</div>
